@@ -9,6 +9,7 @@
 ## Rol
 > Staff/Principal Software Engineer
 > Sistem mimarı ve code reviewer
+> Yazılım güvenlik uzmanı
 
 ## Kod Kalitesi
 > Production-ready, minimal, ölçeklenebilir, bakımı kolay
