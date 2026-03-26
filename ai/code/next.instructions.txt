@@ -1,0 +1,398 @@
+# Project Code Culture & Conventions
+
+Bu dosya, projenin kod kültürünü, mimari kararlarını ve convention'larını tanımlar.
+Yeni projeler oluştururken bu dosyayı AI'ya vererek aynı kod standartlarını koruyabilirsin.
+
+---
+
+## 1. Tech Stack
+
+- **Framework:** Next.js (App Router) + React
+- **Dil:** TypeScript (strict mode)
+- **Bundler:** Turbopack
+- **State Management:** Redux Toolkit (createSlice pattern)
+- **Styling:** SCSS Modules (component-scoped) + Global SCSS (variables, mixins, utility classes)
+- **HTTP Client:** Axios (custom interceptors ile)
+- **Linting:** ESLint (next/core-web-vitals, next/typescript, prettier extends)
+- **Formatting:** Prettier
+- **Git Hooks:** Husky (commit öncesi lint)
+- **Icons:** React Bootstrap Icons (SVG)
+- **Notifications:** react-hot-toast
+- **Date:** dayjs
+- **CSS Class Merge:** clsx
+
+---
+
+## 2. Dizin Yapisi
+
+```
+src/
+├── app/                    # Next.js App Router (route'lar)
+│   ├── (site)/             # Route group'lar parentez ile
+│   │   ├── (auth)/         # Auth sayfaları (login, register)
+│   │   ├── (portal)/       # Ana portal
+│   │   │   ├── (dashboard)/ # Korumalı sayfalar
+│   │   │   └── (static)/   # Statik sayfalar (privacy, terms)
+│   │   └── layout.tsx      # Server-side data fetch + provider setup
+│   └── layout.tsx          # Root layout (HTML, meta, GTM)
+├── components/             # React bileşenleri (kategori bazlı)
+│   ├── shared/             # Ortak bileşenler (Button, Input, Modal, Form)
+│   ├── cards/              # Kart bileşenleri
+│   ├── lists/              # Liste bileşenleri
+│   ├── modals/             # Modal bileşenleri
+│   └── Schema/             # JSON-LD schema bileşenleri
+├── containers/             # Sayfa seviyesinde container bileşenler
+├── layouts/                # Layout wrapper bileşenleri
+├── services/               # API/data fetching
+│   ├── clients/            # Axios client instance'ları
+│   ├── modules/            # Servis modülleri (endpoint grupları)
+│   └── interceptors/       # Request/response interceptor'lar
+├── store/                  # Redux Toolkit
+│   └── modules/            # Redux slice'lar (domain bazlı)
+├── hooks/                  # Custom React hook'lar
+├── types/                  # TypeScript type tanımları
+├── enums/                  # Enum tanımları
+├── constants/              # Sabit değerler
+├── helpers/                # Utility fonksiyonlar
+├── styles/                 # Global SCSS dosyaları
+│   ├── _variables.scss     # Renk paleti, spacing, boyutlar
+│   ├── _mixins.scss        # Responsive utility mixin'leri
+│   ├── _classes.scss       # Utility CSS sınıfları
+│   └── _theme.scss         # Tema tanımları
+├── config/                 # Konfigürasyon dosyaları
+├── providers/              # React context provider'lar
+└── libs/                   # 3. parti kütüphane wrapper'ları
+```
+
+---
+
+## 3. Component Conventions
+
+### Yapı
+- Her component kendi klasöründe `index.tsx` + opsiyonel `index.module.scss` dosyası ile bulunur.
+- Tüm component'lar **functional component** olarak yazılır.
+- Component'ler `FC<Props>` ile tiplendirilir.
+- Performance için `memo()` ile sarılır.
+
+### Örnek Component Yapısı
+
+```tsx
+import { FC, memo } from 'react';
+import clsx from 'clsx';
+
+import UIVariant from '@/enums/ui-variant.enum';
+
+import styles from './index.module.scss';
+
+type Props = {
+  title: string;
+  variant?: UIVariant;
+  isActive?: boolean;
+};
+
+const MyComponent: FC<Props> = ({ title, variant = UIVariant.PRIMARY, isActive }) => {
+  return (
+    <div className={clsx(styles.wrapper, isActive && styles['wrapper--active'])}>
+      <h2>{title}</h2>
+    </div>
+  );
+};
+
+export default memo(MyComponent) as typeof MyComponent;
+```
+
+### Props Tanımlama
+- `type` kullanılır (`interface` değil).
+- Opsiyonel prop'lar `?` ile işaretlenir.
+- HTML attribute'leri extend etmek için `Omit` ve `Partial` kullanılır.
+- Ortak prop'lar `CommonElementProps` type'ından türetilir.
+
+```tsx
+type Props = Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'onClick'> &
+  Partial<{
+    variant: UIVariant;
+    size: UISize;
+    isLoading: boolean;
+  }> &
+  CommonElementProps;
+```
+
+---
+
+## 4. Naming Conventions
+
+| Oge                  | Convention        | Ornek                           |
+|----------------------|-------------------|---------------------------------|
+| Component klasörleri | PascalCase        | `GoldPriceCard/index.tsx`       |
+| Utility dosyaları    | kebab-case        | `date.helper.ts`                |
+| Hook dosyaları       | camelCase + `use` | `useAuth.ts`, `useSocket.ts`    |
+| Servis dosyaları     | kebab-case        | `gold-price.service.ts`         |
+| Type dosyaları       | kebab-case        | `base-option.type.ts`           |
+| Enum dosyaları       | kebab-case        | `ui-variant.enum.ts`            |
+| Constant dosyaları   | kebab-case        | `date-range.constants.ts`       |
+| SCSS modülleri       | kebab-case        | `index.module.scss`             |
+| Global SCSS          | `_` prefix        | `_variables.scss`, `_mixins.scss` |
+| CSS class'ları       | kebab-case + BEM  | `.card-wrapper`, `.btn--primary` |
+| Fonksiyonlar         | camelCase         | `generateMetadata()`, `getGoldApiUrl()` |
+| Enum değerleri       | UPPER_SNAKE_CASE  | `UIVariant.PRIMARY`, `UISize.LARGE` |
+
+---
+
+## 5. Import Conventions
+
+- Tüm import'lar `@/*` path alias'ı ile yapılır (relative import kullanılmaz).
+- `tsconfig.json` içinde `"@/*": ["src/*"]` tanımlıdır.
+
+### Import Sıralaması
+
+```tsx
+// 1. External kütüphaneler
+import { FC, memo, useState } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import clsx from 'clsx';
+
+// 2. Next.js modülleri
+import Link from 'next/link';
+import Image from 'next/image';
+
+// 3. Internal - component'ler
+import Button from '@/components/shared/Button';
+import Modal from '@/components/shared/Modal';
+
+// 4. Internal - hook'lar
+import useAuth from '@/hooks/useAuth';
+
+// 5. Internal - servisler
+import goldService from '@/services/modules/gold.service';
+
+// 6. Internal - store
+import { setGolds } from '@/store/modules/golds';
+
+// 7. Internal - type'lar ve enum'lar
+import UIVariant from '@/enums/ui-variant.enum';
+import type { BaseOption } from '@/types/base-option.type';
+
+// 8. Internal - helper'lar ve constant'lar
+import { formatDate } from '@/helpers/date.helper';
+
+// 9. Styles (her zaman en sonda)
+import styles from './index.module.scss';
+```
+
+### Export Conventions
+- Component'ler: `export default memo(ComponentName) as typeof ComponentName;`
+- Utility fonksiyonlar: Named export
+- Redux action'lar: Named export (`export const { setGolds } = goldsSlice.actions;`)
+- Servisler: Default export (object olarak)
+
+---
+
+## 6. State Management (Redux Toolkit)
+
+### Slice Yapısı
+- Her domain için ayrı bir slice dosyası: `/store/modules/domain.ts`
+- `createSlice()` kullanılır.
+- State type'ları `/types/` altında tanımlanır.
+
+```tsx
+import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import type { GoldsState } from '@/types/golds-state.type';
+
+const initialState: GoldsState = {
+  items: [],
+};
+
+const goldsSlice = createSlice({
+  name: 'golds',
+  initialState,
+  reducers: {
+    setGolds: (state, action: PayloadAction<Gold[]>) => {
+      state.items = action.payload;
+    },
+  },
+});
+
+export const { setGolds } = goldsSlice.actions;
+export default goldsSlice.reducer;
+```
+
+### Store Provider Pattern
+- `StoreProvider` component'i uygulamayı Redux Provider ile sarar.
+- Server-side'da fetch edilen data, provider üzerinden store'a dispatch edilir.
+- SSR data hydration bu şekilde yapılır.
+
+---
+
+## 7. Styling Conventions (SCSS Modules)
+
+### Genel Kurallar
+- Her component kendi `index.module.scss` dosyasına sahiptir.
+- Global değişkenler `_variables.scss`'de tanımlanır ve `next.config.mjs` ile tüm SCSS dosyalarına otomatik import edilir.
+- BEM (Block Element Modifier) naming convention'ı kullanılır.
+- Responsive tasarım mixin'ler ile yapılır (`@include for-mobile`, `@include for-tablet`).
+
+### SCSS Module Örneği
+
+```scss
+.wrapper {
+  padding: $desktop-padding;
+  border-radius: $desktop-border-radius;
+  background-color: $card-bg;
+
+  @include for-tablet {
+    padding: $tablet-padding;
+    border-radius: $tablet-border-radius;
+  }
+
+  @include for-mobile {
+    padding: $mobile-padding;
+    border-radius: $mobile-border-radius;
+  }
+
+  &--active {
+    border-color: $primary;
+  }
+
+  &__title {
+    font-size: 18px;
+    color: $text-primary;
+  }
+}
+```
+
+### Tema Değişkenleri
+- Dark tema kullanılır (siyah arka plan, beyaz metin, altın rengi accent).
+- Renk paleti: `$primary: #ffae00`, `$background-primary: #000`, `$text-primary: #fff`
+- Responsive boyutlar: Desktop (30px/24px), Tablet (23px/18px), Mobile (17px/12px) padding/radius
+
+### UI Variants & Sizes
+- Enum tabanlı variant'lar: `PRIMARY`, `DARK`, `LIGHT`, `REVERSED_PRIMARY`, `GREEN`, vb.
+- Enum tabanlı boyutlar: `SMALL`, `MEDIUM`, `LARGE`
+- clsx ile conditional class uygulaması yapılır.
+
+---
+
+## 8. API & Data Fetching
+
+### Servis Yapısı
+- Her API endpoint grubu için ayrı bir servis dosyası: `/services/modules/domain.service.ts`
+- Axios client instance'ları: `/services/clients/` (farklı base URL'ler için ayrı client)
+- Request/Response interceptor'lar: `/services/interceptors/`
+
+### Servis Dosyası Örneği
+
+```tsx
+import goldApiClient from '@/services/clients/gold-api-client';
+
+export default {
+  getChangeRate: async (params: ChangeRateParams) =>
+    goldApiClient.get('/change-rate', { params }),
+
+  getHistory: async (params: HistoryParams) =>
+    goldApiClient.get('/history', { params }),
+
+  getMinAndMax: async (params: MinMaxParams) =>
+    goldApiClient.get('/min-max', { params }),
+};
+```
+
+### Data Fetching Yaklaşımları
+1. **Server-side:** Layout dosyalarında fetch edilir, provider'lar aracılığıyla store'a aktarılır.
+2. **Client-side:** Hook'lar + servis çağrıları ile yapılır.
+3. **Real-time:** WebSocket entegrasyonu (`useSocket` hook) ile canlı veri akışı sağlanır.
+
+### Environment Config
+- Profile bazlı ortam değişkenleri: `development` vs `production`
+- Server/client ayrımı: API URL'leri ortama göre değişir.
+- `.env.${PROFILE}` pattern'i kullanılır.
+
+---
+
+## 9. Routing (Next.js App Router)
+
+### Route Organization
+- Route group'lar parentez ile: `(site)`, `(auth)`, `(portal)`, `(dashboard)`, `(static)`
+- Dynamic route'lar: `[slug]`, `[id]`
+- Her route grubu kendi `layout.tsx` dosyasına sahip olabilir.
+
+### Layout Hiyerarşisi
+1. **Root Layout:** Global HTML yapısı, meta tag'ler, GTM
+2. **Site Layout:** Server-side data fetch, provider setup
+3. **Auth Layout:** Minimal UI (EmptyLayout)
+4. **Portal Layout:** Header/Footer içeren tam UI (BaseLayout)
+
+---
+
+## 10. SEO & Meta Management
+
+- `seo.helper.ts` ile merkezi metadata yönetimi (`generateMetadata()`)
+- Schema.org JSON-LD entegrasyonu (`schema-dts` paketi ile type-safe)
+- Open Graph ve Twitter Card meta tag'leri
+- Canonical URL yönetimi
+- Dedicated `<Schema />` component'i ile JSON-LD injection
+- Locale: `tr_TR`
+
+---
+
+## 11. Code Quality & Formatting
+
+### Prettier Ayarları
+```json
+{
+  "printWidth": 100,
+  "semi": true,
+  "singleQuote": true,
+  "trailingComma": "all",
+  "tabWidth": 2,
+  "arrowParens": "avoid"
+}
+```
+
+### ESLint Kuralları
+- `next/core-web-vitals` ve `next/typescript` extends edilir.
+- `prettier` ile entegre çalışır.
+- `@typescript-eslint/no-explicit-any`: warn
+- `@typescript-eslint/ban-ts-comment`: warn
+- `import/no-anonymous-default-export`: off
+
+### TypeScript Ayarları
+- `strict: true` (strict mode aktif)
+- `target: ES2017`
+- Path alias: `@/*` -> `src/*`
+
+---
+
+## 12. Performance Optimizasyonları
+
+- React component'ler `memo()` ile sarılır.
+- Pahalı hesaplamalar memoize edilir (custom memoization provider).
+- CSS Modules ile scope'lanmış stiller (gereksiz CSS yüklenmez).
+- Next.js Image component'i ile görsel optimizasyonu.
+- Turbopack ile hızlı build.
+- WebSocket ile gereksiz polling yerine real-time veri akışı.
+
+---
+
+## 13. Authentication
+
+- Cookie tabanlı JWT token yönetimi.
+- Server-side user fetch (layout seviyesinde) + client-side fallback.
+- Korumalı route'lar layout yapısı ile sağlanır.
+- Login sonrası dashboard'a yönlendirme.
+
+---
+
+## 14. Genel Kurallar
+
+1. **Relative import kullanma**, her zaman `@/` path alias'ı kullan.
+2. **Component'leri her zaman `memo()` ile sar.**
+3. **Props için `type` kullan**, `interface` değil.
+4. **Her component kendi klasöründe olsun**: `ComponentName/index.tsx` + `index.module.scss`
+5. **Servisler object olarak default export edilir**, fonksiyonlar named export.
+6. **SCSS değişkenleri global olarak tanımlanır**, component'lerde import gerekmez.
+7. **BEM naming convention** kullan CSS class'larında.
+8. **Enum'lar ayrı dosyalarda tanımlanır**, `UPPER_SNAKE_CASE` değerler ile.
+9. **Hook'lar `use` prefix'i ile adlandırılır.**
+10. **Test yazılmaz** (bu projede test konfigürasyonu yok, ihtiyaca göre eklenebilir).
+11. **Tek dil (Türkçe)** - i18n kütüphanesi kullanılmaz.
+12. **Dark tema** varsayılan tema olarak kullanılır.
