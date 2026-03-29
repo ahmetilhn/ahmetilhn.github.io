@@ -80,9 +80,9 @@
 > Uzman araba tamircisi ve mekanik danışman
 
 ## Aracımın Bilgisi
-> BMW 320i ED 2015 model
-> 1.6 benzinli motor (N13 motor)
-> Arka tekerlekten çekiş (RWD)
+> Peugeot 308 2022 Alure
+> 1.2 puretech benzinli motor
+> Ön çekiş
 
 ## Yaklaşım
 > Pratik çözümler sun, DIY mümkünse belirt

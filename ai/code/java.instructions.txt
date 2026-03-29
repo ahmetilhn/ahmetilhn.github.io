@@ -1,0 +1,395 @@
+# Spring Boot JDBC API - Geliştirme Talimatları
+
+## Proje Özeti
+
+> **Bu dosya şablondur.** Yeni projeye başlarken `{PROJE_ADI}`, `{BASE_PACKAGE}`, `{PORT}` gibi placeholder'ları projeye özel değerlerle değiştir.
+
+- **Proje**: {PROJE_ADI}
+- **Açıklama**: {PROJE_ACIKLAMA}
+- **Framework**: Spring Boot 3.x, Java 21
+- **Build**: Maven
+- **Veritabanı**: MySQL 8 (NamedParameterJdbcTemplate ile — JPA/Hibernate KULLANILMAZ)
+- **Auth**: JWT (JJWT) + Spring Security (Stateless)
+- **Diğer**: Lombok, BCrypt, Jakarta Validation
+- **Port**: {PORT}
+- **Base path**: `/api`
+
+---
+
+## Mimari Kurallar
+
+### Katmanlı Mimari (Zorunlu Sıralama)
+
+```
+Controller → Service (interface) → Repository → SQL dosyaları
+```
+
+- Controller hiçbir iş mantığı içermez, sadece service çağrısını yapar.
+- Service interface tanımı `service/` altında, implementasyonu `service/impl/` altındadır.
+- Repository sınıflarında JPA/Spring Data KULLANILMAZ. Sadece `NamedParameterJdbcTemplate`.
+- SQL sorguları harici `.sql` dosyalarında tutulur: `src/main/resources/sql/queries/{entity}/`
+
+### Paket Yapısı
+
+```
+{BASE_PACKAGE}
+  ├── configuration/      # Security, CORS, PasswordEncoder bean'leri
+  ├── controller/         # REST endpoint'leri
+  │   └── advice/         # GlobalExceptionController
+  ├── converter/          # Entity ↔ DTO dönüşüm sınıfları
+  ├── dto/
+  │   ├── request/        # İstek DTO'ları (record veya class)
+  │   │   └── auth/       # Login/Register request'leri
+  │   └── response/       # Yanıt DTO'ları (@Builder ile)
+  ├── enums/              # Enum tanımları (id + label deseni)
+  ├── exception/          # Özel exception sınıfları (RuntimeException extends)
+  ├── filter/             # JWT AuthenticationFilter
+  ├── helper/             # JwtHelper, ResourceHelper, RowMapperHelper
+  ├── mapper/             # RowMapper implementasyonları (JDBC ResultSet → Entity)
+  ├── model/              # Domain modelleri (BaseEntity extends, @SuperBuilder)
+  ├── repository/         # JDBC repository sınıfları
+  └── service/            # Interface + impl/ altında implementasyon
+```
+
+---
+
+## Yeni Entity Ekleme Adımları
+
+Yeni bir entity eklerken aşağıdaki dosyaları sırayla oluştur:
+
+### 1. Model (`model/YeniEntity.java`)
+
+```java
+@Getter
+@Setter
+@SuperBuilder
+public class YeniEntity extends BaseEntity {
+   private Long id;
+   private String field1;
+   // İlişkiler nesne referansı olarak tutulur (FK değil)
+   private User publisher;
+   private Organization organization;
+}
+```
+
+- `BaseEntity` extends edilir (createdAt, updatedAt otomatik gelir)
+- `@Getter @Setter @SuperBuilder` kullanılır (`@Data` değil — BaseEntity ile uyumsuzluk yaşanır)
+- Boolean alanlar `is` prefix'i alır: `isFrozen`, `isEmailVerified`
+- İlişkiler için FK id değil, nesne referansı tutulur
+
+### 2. SQL Schema (`resources/sql/schemas/yeni-entities.sql`)
+
+```sql
+CREATE TABLE
+   yeni_entities (
+      id BIGINT AUTO_INCREMENT PRIMARY KEY,
+      field1 VARCHAR(255) NOT NULL,
+      publisher_id BIGINT NOT NULL,
+      organization_id BIGINT NOT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL ON UPDATE CURRENT_TIMESTAMP,
+      CONSTRAINT FK_yeni_entity_publisher_id FOREIGN KEY (publisher_id) REFERENCES users (id),
+      CONSTRAINT FK_yeni_entity_organization_id FOREIGN KEY (organization_id) REFERENCES organizations (id)
+   );
+```
+
+- Tablo adı: snake_case, çoğul (`yeni_entities`)
+- FK constraint isimlendirme: `FK_{tablo}_{alan_id}`
+- `created_at` ve `updated_at` her tabloda olmalı
+- Boolean alanlar: `BIT(1) DEFAULT b'0'`
+
+### 3. SQL Sorguları (`resources/sql/queries/yeni-entity/`)
+
+Dosya isimlendirme deseni:
+
+- `insert.sql` — INSERT sorgusu
+- `find-by-id.sql` — Tekil sorgu
+- `find-all-by-{ilişkili-alan}-id.sql` — Liste sorgusu
+
+**SELECT sorgularında kolon alias kuralı**: `{tablo_adi}_{alan_adi}`
+
+```sql
+SELECT
+   ye.id AS yeni_entity_id,
+   ye.field1 AS yeni_entity_field1,
+   ye.created_at AS yeni_entity_created_at,
+   ye.updated_at AS yeni_entity_updated_at,
+   u.id AS user_id,
+   u.email AS user_email
+FROM yeni_entities AS ye
+JOIN users AS u ON u.id = ye.publisher_id
+WHERE ye.id = :id
+```
+
+**INSERT sorgularında named parameter kullanılır:**
+
+```sql
+INSERT INTO yeni_entities(field1, publisher_id, organization_id)
+VALUES(:field1, :publisherId, :organizationId)
+```
+
+### 4. RowMapper (`mapper/YeniEntityMapper.java`)
+
+```java
+public class YeniEntityMapper implements RowMapper<YeniEntity> {
+   @Override
+   @Nullable
+   public YeniEntity mapRow(ResultSet rs, int rowNum) throws SQLException {
+      YeniEntity entity = RowMapperHelper.extractYeniEntity(rs);
+      entity.setPublisher(RowMapperHelper.extractUser(rs));
+      return entity;
+   }
+}
+```
+
+- Her mapper `RowMapperHelper`'daki static extract metodlarını kullanır
+- Yeni entity için `RowMapperHelper`'a yeni `extractYeniEntity()` metodu eklenmeli
+- Extract metodu alias kuralına uygun kolon ismi kullanır: `get(rs, "yeni_entity_id", Long.class)`
+
+### 5. Repository (`repository/YeniEntityRepository.java`)
+
+```java
+@Repository
+@RequiredArgsConstructor
+public class YeniEntityRepository {
+   private final NamedParameterJdbcTemplate namedParameterJdbcTemplate;
+
+   @Value("classpath:sql/queries/yeni-entity/find-by-id.sql")
+   private Resource FIND_BY_ID_SQL;
+
+   @Value("classpath:sql/queries/yeni-entity/insert.sql")
+   private Resource INSERT_SQL;
+
+   public Optional<YeniEntity> findById(Long id) {
+      SqlParameterSource params = new MapSqlParameterSource("id", id);
+      return namedParameterJdbcTemplate.query(
+         ResourceHelper.readString(FIND_BY_ID_SQL), params, new YeniEntityMapper()
+      ).stream().findFirst();
+   }
+
+   public void save(YeniEntity entity) {
+      SqlParameterSource params = new MapSqlParameterSource()
+         .addValue("field1", entity.getField1())
+         .addValue("publisherId", entity.getPublisher().getId())
+         .addValue("organizationId", entity.getOrganization().getId());
+      namedParameterJdbcTemplate.update(ResourceHelper.readString(INSERT_SQL), params);
+   }
+}
+```
+
+- SQL dosyaları `@Value("classpath:...")` ile Resource olarak yüklenir
+- Resource değişken adları UPPER_SNAKE_CASE: `FIND_BY_ID_SQL`, `INSERT_SQL`
+- `Optional` dönüşü için `.stream().findFirst()` deseni kullanılır
+- `ResourceHelper.readString()` ile SQL string'e çevrilir
+
+### 6. Service Interface (`service/YeniEntityService.java`)
+
+```java
+public interface YeniEntityService {
+   void create(YeniEntityRequest request);
+   List<YeniEntity> getAllByOrganizationId(Long organizationId);
+}
+```
+
+### 7. Service Impl (`service/impl/YeniEntityServiceImpl.java`)
+
+```java
+@Service
+@RequiredArgsConstructor
+public class YeniEntityServiceImpl implements YeniEntityService {
+   private final YeniEntityRepository yeniEntityRepository;
+   private final UserPrincipalService userPrincipalService;
+
+   @Override
+   public void create(YeniEntityRequest request) {
+      User user = this.userPrincipalService.getUserPrincipal().getUser();
+      // Yetki kontrolü
+      // Entity oluşturma (Builder pattern)
+      // Repository kayıt
+   }
+}
+```
+
+- `@RequiredArgsConstructor` ile constructor injection
+- Yetki kontrolleri service katmanında yapılır
+- Authenticated kullanıcı: `userPrincipalService.getUserPrincipal().getUser()`
+- Entity bulunamayınca: `throw new NotFoundException("Entity adı")`
+- Yetkisiz işlem: `throw new UnauthorizedException()`
+
+### 8. Request DTO (`dto/request/YeniEntityRequest.java`)
+
+Basit DTO'lar için Java `record` kullanılır:
+
+```java
+public record YeniEntityRequest(
+   @NotBlank String field1,
+   @NotNull Long organizationId
+) {}
+```
+
+Karmaşık DTO'lar (nested, optional alanlar) için class + Lombok:
+
+```java
+@Getter
+@Setter
+public class YeniEntityRequest {
+   @NotBlank private String field1;
+   private Long optionalField;
+}
+```
+
+### 9. Response DTO (`dto/response/YeniEntityResponse.java`) — Gerekirse
+
+```java
+@Builder
+@Getter
+public class YeniEntityResponse {
+   private Long id;
+   private String field1;
+}
+```
+
+### 10. Converter (`converter/YeniEntityDtoConverter.java`) — Gerekirse
+
+```java
+@Component
+@RequiredArgsConstructor
+public class YeniEntityDtoConverter {
+   public YeniEntityResponse convertToResponse(YeniEntity entity) {
+      return YeniEntityResponse.builder()
+         .id(entity.getId())
+         .field1(entity.getField1())
+         .build();
+   }
+}
+```
+
+### 11. Controller (`controller/YeniEntityController.java`)
+
+```java
+@RestController
+@RequestMapping("/api/yeni-entities")
+@RequiredArgsConstructor
+public class YeniEntityController {
+   private final YeniEntityService yeniEntityService;
+
+   @PostMapping
+   @ResponseStatus(HttpStatus.CREATED)
+   public void create(@Valid @RequestBody YeniEntityRequest request) {
+      this.yeniEntityService.create(request);
+   }
+
+   @GetMapping("/by-organization/{organizationId}")
+   public List<YeniEntity> getAllByOrganizationId(@PathVariable Long organizationId) {
+      return this.yeniEntityService.getAllByOrganizationId(organizationId);
+   }
+}
+```
+
+---
+
+## Kod Yazım Kuralları
+
+### Genel Kurallar
+
+- Lombok `@RequiredArgsConstructor` ile constructor injection (her yerde)
+- `this.` prefix'i field erişimlerinde kullanılır
+- Tek satırlık if bloklarında süslü parantez kullanılmaz
+- Entity oluştururken `.builder()` pattern'i kullanılır
+- Validation için Jakarta `@Valid`, `@NotBlank`, `@NotNull`, `@Email`, `@Length`
+
+### İsimlendirme Kuralları
+
+| Yer | Kural | Örnek |
+|-----|-------|-------|
+| Java sınıf | PascalCase | `ProjectCategory` |
+| Java field | camelCase | `posterUrl`, `isFrozen` |
+| DB tablo | snake_case, çoğul | `project_categories` |
+| DB kolon | snake_case | `poster_url`, `is_frozen` |
+| SQL alias | `{tablo}_{kolon}` | `project_category_poster_url` |
+| SQL dosya | kebab-case | `find-all-by-organization-id.sql` |
+| SQL queries klasör | kebab-case, tekil | `project-category/` |
+| SQL schemas dosya | kebab-case, çoğul | `project-categories.sql` |
+| API endpoint | kebab-case, çoğul | `/api/project-categories` |
+| Endpoint filter | `/by-{ilişkili-entity}/{id}` | `/by-organization/{organizationId}` |
+| Resource değişken | UPPER_SNAKE_CASE | `FIND_BY_ID_SQL` |
+
+### Exception Kuralları
+
+- Tüm custom exception'lar `RuntimeException` extend eder
+- Hata mesajları Türkçe yazılır
+- `NotFoundException` parametrik: `throw new NotFoundException("Proje")` → "Proje bulunamadı!"
+- Her farklı hata senaryosu için ayrı exception sınıfı oluşturulur
+- `GlobalExceptionController` (`@RestControllerAdvice`) tüm hataları yakalar, `ErrorResponse` döner
+
+### Enum Kuralları
+
+```java
+@Getter
+public enum SampleType {
+    VALUE1(1001, "Türkçe Label 1"),
+    VALUE2(1002, "Türkçe Label 2");
+
+    private final Integer id;
+    private final String label;
+
+    SampleType(Integer id, String label) {
+        this.id = id;
+        this.label = label;
+    }
+
+    public static SampleType resolveByName(String name) {
+        for (SampleType type : SampleType.values()) {
+            if (type.name().equals(name)) return type;
+        }
+        throw new NotFoundException("Sample tipi");
+    }
+}
+```
+
+- Her enum `id` (Integer) ve `label` (String, Türkçe) taşır
+- `resolveByName()` static metodu bulunur, bulunamazsa `NotFoundException` fırlatır
+
+### Auth / Güvenlik Kuralları
+
+- JWT Bearer token: `Authorization: Bearer {token}`
+- Stateless session (CSRF devre dışı)
+- Korunmayan endpoint'ler `SecurityConfiguration`'da whitelist'e eklenir
+- Authenticated kullanıcı: `userPrincipalService.getUserPrincipal().getUser()`
+- `userPrincipalService.isAuthenticated()` ile auth kontrolü yapılabilir
+- Yetki kontrolleri service katmanında yapılır (controller'da değil)
+
+---
+
+## Build ve Çalıştırma
+
+```bash
+# Derleme
+./mvnw clean package
+
+# Çalıştırma
+./mvnw spring-boot:run
+
+# Docker ile MySQL
+docker-compose up -d
+```
+
+---
+
+## Önemli Notlar
+
+- JPA/Hibernate KULLANMA. Her zaman JDBC + harici SQL dosyaları.
+- Test dosyaları henüz yok. Yeni işlevsellik eklerken test eklenmesi beklenmez (şu an için).
+- Hata mesajları ve enum label'ları Türkçe yazılır.
+- `@Transactional` henüz kullanılmıyor, gerektiğinde service metodlarına eklenebilir.
+
+---
+
+## Proje Başlatma Checklist'i
+
+Yeni projede bu dosyayı kullanırken:
+
+1. Placeholder'ları değiştir: `{PROJE_ADI}`, `{PROJE_ACIKLAMA}`, `{BASE_PACKAGE}`, `{PORT}`
+2. Projeye özel entity/tablo varsa bu dosyanın sonuna "Projeye Özel Notlar" bölümü ekle
+3. Auth yapısı farklıysa "Auth / Güvenlik Kuralları" bölümünü güncelle
+4. Ek dependency'ler varsa "Teknoloji Yığını" bölümüne ekle
