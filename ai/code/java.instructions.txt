@@ -361,7 +361,7 @@ public enum SampleType {
 
 ---
 
-## Build ve Çalıştırma
+## Derleme ve Çalıştırma
 
 ```bash
 # Derleme
@@ -385,7 +385,7 @@ docker-compose up -d
 
 ---
 
-## Proje Başlatma Checklist'i
+## Proje Başlatma Kontrol Listesi
 
 Yeni projede bu dosyayı kullanırken:
 

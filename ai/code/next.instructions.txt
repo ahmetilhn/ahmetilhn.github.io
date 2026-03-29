@@ -1,11 +1,11 @@
-# Project Code Culture & Conventions
+# Proje Kod Kültürü ve Kuralları
 
-Bu dosya, projenin kod kültürünü, mimari kararlarını ve convention'larını tanımlar.
+Bu dosya, projenin kod kültürünü, mimari kararlarını ve kurallarını tanımlar.
 Yeni projeler oluştururken bu dosyayı AI'ya vererek aynı kod standartlarını koruyabilirsin.
 
 ---
 
-## 1. Tech Stack
+## 1. Teknoloji Yığını
 
 - **Framework:** Next.js (App Router) + React
 - **Dil:** TypeScript (strict mode)
@@ -66,7 +66,7 @@ src/
 
 ---
 
-## 3. Component Conventions
+## 3. Bileşen Kuralları
 
 ### Yapı
 - Her component kendi klasöründe `index.tsx` + opsiyonel `index.module.scss` dosyası ile bulunur.
@@ -74,7 +74,7 @@ src/
 - Component'ler `FC<Props>` ile tiplendirilir.
 - Performance için `memo()` ile sarılır.
 
-### Örnek Component Yapısı
+### Örnek Bileşen Yapısı
 
 ```tsx
 import { FC, memo } from 'react';
@@ -119,9 +119,9 @@ type Props = Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'onClick'> &
 
 ---
 
-## 4. Naming Conventions
+## 4. İsimlendirme Kuralları
 
-| Oge                  | Convention        | Ornek                           |
+| Öge                  | Kural             | Örnek                           |
 |----------------------|-------------------|---------------------------------|
 | Component klasörleri | PascalCase        | `GoldPriceCard/index.tsx`       |
 | Utility dosyaları    | kebab-case        | `date.helper.ts`                |
@@ -138,7 +138,7 @@ type Props = Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'onClick'> &
 
 ---
 
-## 5. Import Conventions
+## 5. Import Kuralları
 
 - Tüm import'lar `@/*` path alias'ı ile yapılır (relative import kullanılmaz).
 - `tsconfig.json` içinde `"@/*": ["src/*"]` tanımlıdır.
@@ -179,7 +179,7 @@ import { formatDate } from '@/helpers/date.helper';
 import styles from './index.module.scss';
 ```
 
-### Export Conventions
+### Export Kuralları
 - Component'ler: `export default memo(ComponentName) as typeof ComponentName;`
 - Utility fonksiyonlar: Named export
 - Redux action'lar: Named export (`export const { setGolds } = goldsSlice.actions;`)
@@ -187,7 +187,7 @@ import styles from './index.module.scss';
 
 ---
 
-## 6. State Management (Redux Toolkit)
+## 6. Durum Yönetimi (Redux Toolkit)
 
 ### Slice Yapısı
 - Her domain için ayrı bir slice dosyası: `/store/modules/domain.ts`
@@ -216,14 +216,14 @@ export const { setGolds } = goldsSlice.actions;
 export default goldsSlice.reducer;
 ```
 
-### Store Provider Pattern
+### Store Provider Deseni
 - `StoreProvider` component'i uygulamayı Redux Provider ile sarar.
 - Server-side'da fetch edilen data, provider üzerinden store'a dispatch edilir.
 - SSR data hydration bu şekilde yapılır.
 
 ---
 
-## 7. Styling Conventions (SCSS Modules)
+## 7. Stil Kuralları (SCSS Modülleri)
 
 ### Genel Kurallar
 - Her component kendi `index.module.scss` dosyasına sahiptir.
@@ -265,14 +265,14 @@ export default goldsSlice.reducer;
 - Renk paleti: `$primary: #ffae00`, `$background-primary: #000`, `$text-primary: #fff`
 - Responsive boyutlar: Desktop (30px/24px), Tablet (23px/18px), Mobile (17px/12px) padding/radius
 
-### UI Variants & Sizes
+### UI Varyantları ve Boyutları
 - Enum tabanlı variant'lar: `PRIMARY`, `DARK`, `LIGHT`, `REVERSED_PRIMARY`, `GREEN`, vb.
 - Enum tabanlı boyutlar: `SMALL`, `MEDIUM`, `LARGE`
 - clsx ile conditional class uygulaması yapılır.
 
 ---
 
-## 8. API & Data Fetching
+## 8. API ve Veri Çekme
 
 ### Servis Yapısı
 - Her API endpoint grubu için ayrı bir servis dosyası: `/services/modules/domain.service.ts`
@@ -296,21 +296,21 @@ export default {
 };
 ```
 
-### Data Fetching Yaklaşımları
+### Veri Çekme Yaklaşımları
 1. **Server-side:** Layout dosyalarında fetch edilir, provider'lar aracılığıyla store'a aktarılır.
 2. **Client-side:** Hook'lar + servis çağrıları ile yapılır.
 3. **Real-time:** WebSocket entegrasyonu (`useSocket` hook) ile canlı veri akışı sağlanır.
 
-### Environment Config
+### Ortam Yapılandırması
 - Profile bazlı ortam değişkenleri: `development` vs `production`
 - Server/client ayrımı: API URL'leri ortama göre değişir.
 - `.env.${PROFILE}` pattern'i kullanılır.
 
 ---
 
-## 9. Routing (Next.js App Router)
+## 9. Yönlendirme (Next.js App Router)
 
-### Route Organization
+### Rota Organizasyonu
 - Route group'lar parentez ile: `(site)`, `(auth)`, `(portal)`, `(dashboard)`, `(static)`
 - Dynamic route'lar: `[slug]`, `[id]`
 - Her route grubu kendi `layout.tsx` dosyasına sahip olabilir.
@@ -323,7 +323,7 @@ export default {
 
 ---
 
-## 10. SEO & Meta Management
+## 10. SEO ve Meta Yönetimi
 
 - `seo.helper.ts` ile merkezi metadata yönetimi (`generateMetadata()`)
 - Schema.org JSON-LD entegrasyonu (`schema-dts` paketi ile type-safe)
@@ -334,7 +334,7 @@ export default {
 
 ---
 
-## 11. Code Quality & Formatting
+## 11. Kod Kalitesi ve Formatlama
 
 ### Prettier Ayarları
 ```json
@@ -373,7 +373,7 @@ export default {
 
 ---
 
-## 13. Authentication
+## 13. Kimlik Doğrulama
 
 - Cookie tabanlı JWT token yönetimi.
 - Server-side user fetch (layout seviyesinde) + client-side fallback.
