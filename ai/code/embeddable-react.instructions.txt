@@ -10,7 +10,6 @@ Bu doküman iki bölümden oluşur:
                          A) MİMARİ & STRATEJİK YAPI
 ================================================================================
 
-
 ================================================================================
 1. TEMEL MİMARİ YAKLAŞIM
 ================================================================================
@@ -49,229 +48,92 @@ ParamsType mutlaka şunları içerir:
   - ...domain-specific data props (opsiyonel)
 
 ================================================================================
-3. DOSYA YAPISI
+                       B) KOD KÜLTÜRÜ & STANDARTLAR
 ================================================================================
 
-lib/
-├── index.tsx                    → Entry point (class export)
-├── core/
-│   ├── app.tsx                  → React root component (store init + ana container render)
-│   ├── declaration.d.ts         → Module declarations (scss vs.)
-│   ├── store/
-│   │   └── index.ts             → Global state (tek dosya)
-│   ├── types/
-│   │   ├── ParamsType.ts        → Constructor params tipi
-│   │   ├── OptionsType.ts       → Kullanıcı konfigürasyon tipi
-│   │   └── I*.ts / *Type.ts     → Domain interface ve type'ları
-│   ├── hooks/
-│   │   ├── useController.ts     → Temel kontrol aksiyonları
-│   │   ├── useListener.ts       → DOM event listener yönetimi
-│   │   ├── useCleaner.ts        → Resource cleanup
-│   │   └── use*.ts              → Domain-specific hooks
-│   ├── helpers/
-│   │   └── *.helper.ts          → Saf fonksiyonlar (parsing, arama vs.)
-│   ├── utils/
-│   │   ├── constants.ts         → Sabitler, regex'ler, default değerler
-│   │   └── *.util.ts            → Generic utility fonksiyonlar
-│   ├── containers/
-│   │   └── *Container/
-│   │       ├── index.tsx
-│   │       └── index.module.scss
-│   └── components/
-│       └── *Component/
-│           ├── index.tsx
-│           └── index.module.scss
-
-Kurallar:
-  - Her component ve container kendi klasöründe yaşar (index.tsx + index.module.scss).
-  - Dosya adı olarak index.tsx kullanılır, import path'i klasör adından okunur.
-  - Types klasöründe her tip kendi dosyasında, default export ile verilir.
-  - helpers/ → business logic'e bağlı saf fonksiyonlar (srt parse, arama vs.)
-  - utils/ → domain-agnostic utility fonksiyonlar (zaman formatlama, hesaplama vs.)
-
 ================================================================================
-4. STATE MANAGEMENT (Zustand)
+1. TEKNOLOJİ YIĞINI
 ================================================================================
 
-- Zustand kullanılır (lightweight, React dışında da erişilebilir).
-- Tek bir store dosyası: store/index.ts
-- Store tipi açıkça tanımlanır (Store type).
-- Her state field'ının karşılığında bir setter fonksiyonu olur.
-  Örnek: isPlay → setPlay, currentTime → setCurrentTime
-- Initial state ayrı bir obje olarak tanımlanır, store fonksiyonu spread ile alır.
-- Store doğrudan import edilir, context/provider kullanılmaz.
-  Kullanım: const { field, setField } = store((store) => store);
-- Store'a React dışından erişim gerekirse: store.getState() / store.setState()
+- Framework: React
+- Dil: TypeScript (strict mode)
+- State Management: Redux Toolkit (createSlice pattern)
+- Styling: SCSS Modules (component-scoped) + Global SCSS (variables, mixins, utility classes)
+- HTTP Client: Axios (custom interceptors ile)
+- Linting: ESLint + Prettier
+- Formatting: Prettier
+- Git Hooks: Husky (commit öncesi lint)
+- Icons: React Bootstrap Icons (SVG)
+- Notifications: react-hot-toast
+- Date: dayjs
+- CSS Class Merge: clsx
 
 ================================================================================
-5. COMPONENT & CONTAINER AYIRIMI
+2. DİZİN YAPISI
 ================================================================================
 
-Containers:
-  - Layout ve yapısal düzenleme yapar.
-  - Alt component'leri compose eder.
-  - Mouse/keyboard event yönetimi ve visibility kontrolü gibi cross-cutting
-    concern'leri barındırır.
-
-Components:
-  - Tek bir UI sorumluluğu taşır (buton, progress bar, caption vs.).
-  - Store'dan ihtiyacı olan state'i kendisi çeker.
-  - İlgili hook'u kendisi çağırır.
-
-Genel kurallar:
-  - Component'ler arası veri akışı store üzerinden yapılır, prop drilling yoktur.
-  - Bir component hem store'dan okuma hem hook'tan aksiyon alabilir.
-  - SVG icon'lar doğrudan JSX içinde inline olarak kullanılır (ayrı icon dosyası yok).
-
-================================================================================
-6. HOOKS PATTERN
-================================================================================
-
-Hook kategorileri:
-  - useController: Temel kullanıcı aksiyonları (play, pause, seek, reset vs.)
-  - useListener: DOM event listener attach/detach yönetimi
-  - useCleaner: Blob URL revoke, element src temizleme gibi cleanup işlemleri
-  - Domain hooks: Spesifik iş mantığı (useVideo, useCaption, useProgress vs.)
-
-Kurallar:
-  - Her hook tek bir sorumluluk alanına sahiptir.
-  - Hook'lar store'a doğrudan erişir, parametre olarak state almaz.
-  - Hook'lar obje döner: return { fn1, fn2 }
-  - Event listener ekleme/kaldırma useEffect cleanup'ında yapılır.
-  - Hook'lar birbirini çağırabilir (useController → useCleaner gibi).
+src/
+├── components/             # React bileşenleri (kategori bazlı)
+│   ├── shared/             # Ortak bileşenler (Button, Input, Modal, Form)
+│   ├── cards/              # Kart bileşenleri
+│   ├── lists/              # Liste bileşenleri
+│   └── modals/             # Modal bileşenleri
+├── containers/             # Sayfa/view seviyesinde container bileşenler
+├── layouts/                # Layout wrapper bileşenleri
+├── services/               # API/data fetching
+│   ├── clients/            # Axios client instance'ları
+│   ├── modules/            # Servis modülleri (endpoint grupları)
+│   └── interceptors/       # Request/response interceptor'lar
+├── store/                  # Redux Toolkit
+│   └── modules/            # Redux slice'lar (domain bazlı)
+├── hooks/                  # Custom React hook'lar
+├── types/                  # TypeScript type tanımları
+├── enums/                  # Enum tanımları
+├── constants/              # Sabit değerler
+├── helpers/                # Utility fonksiyonlar
+├── styles/                 # Global SCSS dosyaları
+│   ├── _variables.scss     # Renk paleti, spacing, boyutlar
+│   ├── _mixins.scss        # Responsive utility mixin'leri
+│   ├── _classes.scss       # Utility CSS sınıfları
+│   └── _theme.scss         # Tema tanımları
+├── config/                 # Konfigürasyon dosyaları
+├── providers/              # React context provider'lar
+└── libs/                   # 3. parti kütüphane wrapper'ları
 
 ================================================================================
-7. BUILD & BUNDLE
-================================================================================
-
-- Rollup kullanılır.
-- Çıktı formatı: UMD (Universal Module Definition).
-- UMD name: PascalCase class adı.
-- Pluginler (sırasıyla):
-  1. @rollup/plugin-node-resolve (browser: true)
-  2. @rollup/plugin-commonjs
-  3. @rollup/plugin-typescript
-  4. rollup-plugin-postcss (scss desteği, minimize: true)
-  5. @rollup/plugin-replace (process.env.NODE_ENV → "production")
-  6. @rollup/plugin-babel (preset-env + preset-react)
-  7. @rollup/plugin-terser (minification)
-- tsconfig: target es5, jsx react-jsx, module esnext, strict true.
-- Build script'leri scripts/ klasöründe shell script olarak tutulur:
-  - prod-build.sh: rollup -c --environment INCLUDE_DEPS,BUILD:production
-  - dev-build.sh: rollup -c -w --environment INCLUDE_DEPS,BUILD:production
-- package.json main field: build çıktısına işaret eder.
-- .npmignore ile gereksiz dosyalar npm paketinden çıkarılır.
-
-================================================================================
-8. RESOURCE YÖNETİMİ
-================================================================================
-
-- Dış kaynaklar (video, altyazı, poster vs.) fetch → blob → URL.createObjectURL
-  pattern'i ile yüklenir.
-- Bu yaklaşım CORS sorunlarını azaltır ve tarayıcı cache'ini etkin kullanır.
-- Her oluşturulan blob URL, kullanım bittiğinde URL.revokeObjectURL ile temizlenir.
-- Cleanup işlemleri useCleaner hook'unda merkezileştirilir.
-- Kaynak hazırlığı (fetch + blob) ayrı bir hook'ta yapılır.
-
-================================================================================
-9. EVENT & LIFECYCLE YÖNETİMİ
-================================================================================
-
-- Tüm DOM event listener'ları useListener hook'unda merkezileştirilir.
-- startListeners() ve removeListeners() pair'i ile yönetilir.
-- useEffect cleanup'ında removeListeners çağrılır.
-- Listener'lar ihtiyaç anında başlatılır, her zaman aktif değildir.
-- Event'ler ayrı handler fonksiyonlarla ele alınır.
-
-================================================================================
-10. HOST UYGULAMA İZOLASYONU
-================================================================================
-
-- Widget kendi DOM sub-tree'sinde yaşar, host uygulamayı kirletmez.
-- CSS Modules ile stil izolasyonu sağlanır.
-- Ana container'da wildcard reset: * { margin: 0; padding: 0; box-sizing: border-box; }
-- Ana container'da user-select: none ile kullanıcı seçimi engellenir.
-- Widget içi tüm elementler container'ın içinde kalır (overflow: hidden).
-- Fullscreen API kullanıldığında widget'ın kendi container'ı fullscreen yapılır.
-- Sabit bir iç ID kullanılır ancak dışarıya targetElemId ile esneklik verilir.
-
-================================================================================
-11. ERROR HANDLING
-================================================================================
-
-- Constructor'da hata fırlatılmaz, init()'te hedef element bulunamazsa Error fırlatılır.
-- Fetch işlemleri try/catch içinde, hata durumunda console.error ile loglanır
-  ve null/undefined döner.
-- Kritik olmayan hatalar sessizce handle edilir (poster yüklenemezse video
-  çalışmaya devam eder).
-- Kullanıcı aksiyonları guard clause ile korunur:
-  if (!videoElem || time < 0) return;
-
-================================================================================
-12. CONSUMER API TASARIMI
-================================================================================
-
-Kullanıcı (consumer) perspektifinden API mümkün olduğunca basit olmalıdır:
-
-  <!-- HTML -->
-  <div id="my-widget"></div>
-  <script src="widget.umd.js"></script>
-  <script>
-    const widget = new WidgetName({
-      targetElemId: "my-widget",
-      options: { isDarkTheme: true },
-      ...domainData
-    });
-    widget.init();
-  </script>
-
-Kurallar:
-  - Constructor config-only, side-effect yok.
-  - init() açıkça çağrılır (auto-init yok).
-  - Options her zaman opsiyonel, mantıklı default'lar sağlanır.
-  - Domain data opsiyonel olabilir, en az biri verilmelidir.
-  - Hata mesajları açıklayıcı olmalıdır.
-
-
-================================================================================
-                        B) KOD KÜLTÜRÜ & STANDARTLAR
-================================================================================
-
-
-================================================================================
-13. BİLEŞEN KURALLARI
+3. BİLEŞEN KURALLARI
 ================================================================================
 
 ### Yapı
-- Her component kendi klasöründe index.tsx + opsiyonel index.module.scss ile bulunur.
+- Her component kendi klasöründe index.tsx + opsiyonel index.module.scss dosyası ile bulunur.
 - Tüm component'lar functional component olarak yazılır.
 - Component'ler FC<Props> ile tiplendirilir.
 - Performance için memo() ile sarılır.
 
 ### Örnek Bileşen Yapısı
 
-  import { FC, memo } from 'react';
-  import clsx from 'clsx';
+import { FC, memo } from 'react';
+import clsx from 'clsx';
 
-  import UIVariant from '@/enums/ui-variant.enum';
+import UIVariant from '@/enums/ui-variant.enum';
 
-  import styles from './index.module.scss';
+import styles from './index.module.scss';
 
-  type Props = {
-    title: string;
-    variant?: UIVariant;
-    isActive?: boolean;
-  };
+type Props = {
+  title: string;
+  variant?: UIVariant;
+  isActive?: boolean;
+};
 
-  const MyComponent: FC<Props> = ({ title, variant = UIVariant.PRIMARY, isActive }) => {
-    return (
-      <div className={clsx(styles.wrapper, isActive && styles['wrapper--active'])}>
-        <h2>{title}</h2>
-      </div>
-    );
-  };
+const MyComponent: FC<Props> = ({ title, variant = UIVariant.PRIMARY, isActive }) => {
+  return (
+    <div className={clsx(styles.wrapper, isActive && styles['wrapper--active'])}>
+      <h2>{title}</h2>
+    </div>
+  );
+};
 
-  export default memo(MyComponent) as typeof MyComponent;
+export default memo(MyComponent) as typeof MyComponent;
 
 ### Props Tanımlama
 - type kullanılır (interface değil).
@@ -279,72 +141,111 @@ Kurallar:
 - HTML attribute'leri extend etmek için Omit ve Partial kullanılır.
 - Ortak prop'lar CommonElementProps type'ından türetilir.
 
-  type Props = Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'onClick'> &
-    Partial<{
-      variant: UIVariant;
-      size: UISize;
-      isLoading: boolean;
-    }> &
-    CommonElementProps;
+type Props = Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'onClick'> &
+  Partial<{
+    variant: UIVariant;
+    size: UISize;
+    isLoading: boolean;
+  }> &
+  CommonElementProps;
 
 ================================================================================
-14. İSİMLENDİRME KURALLARI
+4. İSİMLENDİRME KURALLARI
 ================================================================================
 
-  | Öge                  | Kural             | Örnek                           |
-  |----------------------|-------------------|---------------------------------|
-  | Component klasörleri | PascalCase        | GoldPriceCard/index.tsx         |
-  | Container klasörleri | PascalCase        | AppContainer/index.tsx          |
-  | Utility dosyaları    | kebab-case        | date.helper.ts                  |
-  | Hook dosyaları       | camelCase + use   | useAuth.ts, useSocket.ts        |
-  | Servis dosyaları     | kebab-case        | gold-price.service.ts           |
-  | Type dosyaları       | kebab-case        | base-option.type.ts             |
-  | Enum dosyaları       | kebab-case        | ui-variant.enum.ts              |
-  | Constant dosyaları   | kebab-case        | date-range.constants.ts         |
-  | SCSS modülleri       | kebab-case        | index.module.scss               |
-  | Global SCSS          | _ prefix          | _variables.scss, _mixins.scss   |
-  | CSS class'ları       | kebab-case + BEM  | .card-wrapper, .btn--primary    |
-  | Fonksiyonlar         | camelCase         | generateMetadata(), getApiUrl() |
-  | Enum değerleri       | UPPER_SNAKE_CASE  | UIVariant.PRIMARY               |
+| Öge                  | Kural             | Örnek                           |
+|----------------------|-------------------|---------------------------------|
+| Component klasörleri | PascalCase        | GoldPriceCard/index.tsx         |
+| Utility dosyaları    | kebab-case        | date.helper.ts                  |
+| Hook dosyaları       | camelCase + use   | useAuth.ts, useSocket.ts        |
+| Servis dosyaları     | kebab-case        | gold-price.service.ts           |
+| Type dosyaları       | kebab-case        | base-option.type.ts             |
+| Enum dosyaları       | kebab-case        | ui-variant.enum.ts              |
+| Constant dosyaları   | kebab-case        | date-range.constants.ts         |
+| SCSS modülleri       | kebab-case        | index.module.scss               |
+| Global SCSS          | _ prefix          | _variables.scss, _mixins.scss   |
+| CSS class'ları       | kebab-case + BEM  | .card-wrapper, .btn--primary    |
+| Fonksiyonlar         | camelCase         | getGoldApiUrl()                 |
+| Enum değerleri       | UPPER_SNAKE_CASE  | UIVariant.PRIMARY, UISize.LARGE |
 
 ================================================================================
-15. IMPORT KURALLARI
+5. IMPORT KURALLARI
 ================================================================================
+
+- Tüm import'lar @/* path alias'ı ile yapılır (relative import kullanılmaz).
+- tsconfig.json içinde "@/*": ["src/*"] tanımlıdır.
 
 ### Import Sıralaması
 
-  // 1. External kütüphaneler
-  import { FC, memo, useState } from 'react';
-  import clsx from 'clsx';
+// 1. External kütüphaneler
+import { FC, memo, useState } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import clsx from 'clsx';
 
-  // 2. Internal - component'ler
-  import Button from '@/components/shared/Button';
-  import Modal from '@/components/shared/Modal';
+// 2. Internal - component'ler
+import Button from '@/components/shared/Button';
+import Modal from '@/components/shared/Modal';
 
-  // 3. Internal - hook'lar
-  import useAuth from '@/hooks/useAuth';
+// 3. Internal - hook'lar
+import useAuth from '@/hooks/useAuth';
 
-  // 4. Internal - store
-  import { setGolds } from '@/store/modules/golds';
+// 4. Internal - servisler
+import goldService from '@/services/modules/gold.service';
 
-  // 5. Internal - type'lar ve enum'lar
-  import UIVariant from '@/enums/ui-variant.enum';
-  import type { BaseOption } from '@/types/base-option.type';
+// 5. Internal - store
+import { setGolds } from '@/store/modules/golds';
 
-  // 6. Internal - helper'lar ve constant'lar
-  import { formatDate } from '@/helpers/date.helper';
+// 6. Internal - type'lar ve enum'lar
+import UIVariant from '@/enums/ui-variant.enum';
+import type { BaseOption } from '@/types/base-option.type';
 
-  // 7. Styles (her zaman en sonda)
-  import styles from './index.module.scss';
+// 7. Internal - helper'lar ve constant'lar
+import { formatDate } from '@/helpers/date.helper';
+
+// 8. Styles (her zaman en sonda)
+import styles from './index.module.scss';
 
 ### Export Kuralları
 - Component'ler: export default memo(ComponentName) as typeof ComponentName;
 - Utility fonksiyonlar: Named export
-- Store action'lar: Named export (export const { setItems } = slice.actions;)
+- Redux action'lar: Named export (export const { setGolds } = goldsSlice.actions;)
 - Servisler: Default export (object olarak)
 
 ================================================================================
-16. STİL KURALLARI (SCSS Modules)
+6. DURUM YÖNETİMİ (Redux Toolkit)
+================================================================================
+
+### Slice Yapısı
+- Her domain için ayrı bir slice dosyası: /store/modules/domain.ts
+- createSlice() kullanılır.
+- State type'ları /types/ altında tanımlanır.
+
+import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import type { GoldsState } from '@/types/golds-state.type';
+
+const initialState: GoldsState = {
+  items: [],
+};
+
+const goldsSlice = createSlice({
+  name: 'golds',
+  initialState,
+  reducers: {
+    setGolds: (state, action: PayloadAction<Gold[]>) => {
+      state.items = action.payload;
+    },
+  },
+});
+
+export const { setGolds } = goldsSlice.actions;
+export default goldsSlice.reducer;
+
+### Store Provider Deseni
+- StoreProvider component'i uygulamayı Redux Provider ile sarar.
+- Config üzerinden gelen initial data, provider aracılığıyla store'a dispatch edilir.
+
+================================================================================
+7. STİL KURALLARI (SCSS Modülleri)
 ================================================================================
 
 ### Genel Kurallar
@@ -352,34 +253,33 @@ Kurallar:
 - Global değişkenler _variables.scss'de tanımlanır.
 - BEM (Block Element Modifier) naming convention'ı kullanılır.
 - Responsive tasarım mixin'ler ile yapılır (@include for-mobile, @include for-tablet).
-- clsx ile conditional class uygulaması yapılır.
 
 ### SCSS Module Örneği
 
-  .wrapper {
-    padding: $desktop-padding;
-    border-radius: $desktop-border-radius;
-    background-color: $card-bg;
+.wrapper {
+  padding: $desktop-padding;
+  border-radius: $desktop-border-radius;
+  background-color: $card-bg;
 
-    @include for-tablet {
-      padding: $tablet-padding;
-      border-radius: $tablet-border-radius;
-    }
-
-    @include for-mobile {
-      padding: $mobile-padding;
-      border-radius: $mobile-border-radius;
-    }
-
-    &--active {
-      border-color: $primary;
-    }
-
-    &__title {
-      font-size: 18px;
-      color: $text-primary;
-    }
+  @include for-tablet {
+    padding: $tablet-padding;
+    border-radius: $tablet-border-radius;
   }
+
+  @include for-mobile {
+    padding: $mobile-padding;
+    border-radius: $mobile-border-radius;
+  }
+
+  &--active {
+    border-color: $primary;
+  }
+
+  &__title {
+    font-size: 18px;
+    color: $text-primary;
+  }
+}
 
 ### UI Varyantları ve Boyutları
 - Enum tabanlı variant'lar: PRIMARY, DARK, LIGHT, REVERSED_PRIMARY, GREEN, vb.
@@ -387,29 +287,50 @@ Kurallar:
 - clsx ile conditional class uygulaması yapılır.
 
 ================================================================================
-17. TYPESCRIPT KULLANIMI
+8. API VE VERİ ÇEKME
 ================================================================================
 
-- strict: true (strict mode aktif)
-- Props ve state type'ları için type kullanılır (interface değil).
-- Her tip kendi dosyasında tanımlanır.
-- Enum'lar ayrı dosyalarda tanımlanır, UPPER_SNAKE_CASE değerler ile.
-- as type assertion sadece zorunlu olduğunda kullanılır.
-- @typescript-eslint/no-explicit-any: warn
+### Servis Yapısı
+- Her API endpoint grubu için ayrı bir servis dosyası: /services/modules/domain.service.ts
+- Axios client instance'ları: /services/clients/ (farklı base URL'ler için ayrı client)
+- Request/Response interceptor'lar: /services/interceptors/
+
+### Servis Dosyası Örneği
+
+import goldApiClient from '@/services/clients/gold-api-client';
+
+export default {
+  getChangeRate: async (params: ChangeRateParams) =>
+    goldApiClient.get('/change-rate', { params }),
+
+  getHistory: async (params: HistoryParams) =>
+    goldApiClient.get('/history', { params }),
+
+  getMinAndMax: async (params: MinMaxParams) =>
+    goldApiClient.get('/min-max', { params }),
+};
+
+### Veri Çekme Yaklaşımları
+1. Client-side: Hook'lar + servis çağrıları ile yapılır.
+2. Real-time: WebSocket entegrasyonu (useSocket hook) ile canlı veri akışı sağlanır.
+
+### Ortam Yapılandırması
+- Ortam değişkenleri ile API URL'leri yönetilir.
+- Farklı ortamlar (development, production) için ayrı konfigürasyon.
 
 ================================================================================
-18. KOD KALİTESİ VE FORMATLAMA
+9. KOD KALİTESİ VE FORMATLAMA
 ================================================================================
 
 ### Prettier Ayarları
-  {
-    "printWidth": 100,
-    "semi": true,
-    "singleQuote": true,
-    "trailingComma": "all",
-    "tabWidth": 2,
-    "arrowParens": "avoid"
-  }
+{
+  "printWidth": 100,
+  "semi": true,
+  "singleQuote": true,
+  "trailingComma": "all",
+  "tabWidth": 2,
+  "arrowParens": "avoid"
+}
 
 ### ESLint Kuralları
 - prettier ile entegre çalışır.
@@ -417,33 +338,31 @@ Kurallar:
 - @typescript-eslint/ban-ts-comment: warn
 - import/no-anonymous-default-export: off
 
-### Linting & Git Hooks
-- ESLint + Prettier entegrasyonu.
-- Husky ile commit öncesi lint çalıştırılır.
-- Build öncesi lint check zorunludur.
+### TypeScript Ayarları
+- strict: true (strict mode aktif)
+- target: ES2017
+- Path alias: @/* -> src/*
 
 ================================================================================
-19. PERFORMANS
+10. PERFORMANCE OPTİMİZASYONLARI
 ================================================================================
 
 - React component'ler memo() ile sarılır.
 - Pahalı hesaplamalar memoize edilir.
 - CSS Modules ile scope'lanmış stiller (gereksiz CSS yüklenmez).
-- useCallback ve useMemo performans gereken yerlerde kullanılır.
+- WebSocket ile gereksiz polling yerine real-time veri akışı.
 
 ================================================================================
-20. GENEL KURALLAR
+11. GENEL KURALLAR
 ================================================================================
 
-  1. Component'leri her zaman memo() ile sar.
-  2. Props için type kullan, interface değil.
-  3. Her component kendi klasöründe olsun: ComponentName/index.tsx + index.module.scss
-  4. Servisler object olarak default export edilir, fonksiyonlar named export.
-  5. SCSS değişkenleri global olarak tanımlanır.
-  6. BEM naming convention kullan CSS class'larında.
-  7. Enum'lar ayrı dosyalarda tanımlanır, UPPER_SNAKE_CASE değerler ile.
-  8. Hook'lar use prefix'i ile adlandırılır.
-  9. Yorum satırı eklenmez, kod kendini anlatır.
- 10. Over-engineering yok, en basit çalışan çözüm tercih edilir.
-
-================================================================================
+1. Relative import kullanma, her zaman @/ path alias'ı kullan.
+2. Component'leri her zaman memo() ile sar.
+3. Props için type kullan, interface değil.
+4. Her component kendi klasöründe olsun: ComponentName/index.tsx + index.module.scss
+5. Servisler object olarak default export edilir, fonksiyonlar named export.
+6. SCSS değişkenleri global olarak tanımlanır.
+7. BEM naming convention kullan CSS class'larında.
+8. Enum'lar ayrı dosyalarda tanımlanır, UPPER_SNAKE_CASE değerler ile.
+9. Hook'lar use prefix'i ile adlandırılır.
+10. Test yazılmaz (ihtiyaca göre eklenebilir).
