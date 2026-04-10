@@ -65,20 +65,20 @@ src/
 Proje, başka bir uygulama içerisine embed edilebilen bir widget olarak tasarlanmıştır.
 
 ### Entry Point (`src/widget.tsx`)
-- Class tabanlı API: `new ConversationalSearchWidget(params).init()`
+- Class tabanlı API: `new ExampleWidget(params).init()`
 - `init()` ile mount, `destroy()` ile unmount
 - Parametre olarak `targetElemId`, `isLoggedIn`, `onClose` alır
 
 ### Build
 - `npm run dev` → Vite dev server (`index.html` + `src/main.tsx`)
-- `npm run build` → UMD bundle (`build/conversational-search.umd.js` + `build/*.css`)
+- `npm run build` → UMD bundle (`build/example-widget.umd.js` + `build/*.css`)
 - React ve ReactDOM external olarak beklenir (host proje sağlar)
 
 ### Kullanım
 ```html
 <div id="chat-widget"></div>
 <script>
-  const widget = new ConversationalSearchWidget({
+  const widget = new ExampleWidget({
     targetElemId: 'chat-widget',
     isLoggedIn: false,
     onClose: () => console.log('kapatıldı'),
