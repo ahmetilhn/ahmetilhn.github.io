@@ -1,91 +1,48 @@
-================================================================================
-EMBEDDABLE WIDGET / FRAMEWORK-AGNOSTIC UI LIBRARY — PROJE STANDARTLARI
-================================================================================
+# Proje Kod Kültürü ve Kuralları
 
-Bu doküman iki bölümden oluşur:
-  A) Mimari & Stratejik Yapı — Widget/embed projelere özgü mimari kararlar
-  B) Kod Kültürü & Standartlar — React/TypeScript/SCSS genel kodlama kuralları
+Bu dosya, projenin kod kültürünü, mimari kararlarını ve kurallarını tanımlar.
+Yeni projeler oluştururken bu dosyayı AI'ya vererek aynı kod standartlarını koruyabilirsin.
 
-================================================================================
-                         A) MİMARİ & STRATEJİK YAPI
-================================================================================
+---
 
-================================================================================
-1. TEMEL MİMARİ YAKLAŞIM
-================================================================================
+## 1. Teknoloji Yığını
 
-- Proje React ile yazılır ama dışarıya framework-agnostic bir JavaScript class
-  olarak sunulur.
-- Tüketici (consumer) sadece bir div id'si ve config objesi verir, gerisini
-  widget halleder.
-- React, ReactDOM ve state management kütüphanesi bundle'a dahil edilir.
-  Dış dünya React bilmek zorunda değildir.
-- Build çıktısı UMD formatındadır. Hem script tag ile hem de module import ile
-  kullanılabilir.
+- **Kütüphane:** React
+- **Dil:** TypeScript (strict mode)
+- **Bundler:** Vite
+- **Build Çıktısı:** UMD (widget olarak embed edilebilir)
+- **State Management:** Zustand (tek dosyada store)
+- **Styling:** SCSS Modules (component-scoped) + Global SCSS (variables, mixins, utility classes)
+- **HTTP Client:** Axios (custom interceptors ile)
+- **Linting:** ESLint + Prettier
+- **Formatting:** Prettier
+- **Git Hooks:** Husky (commit öncesi lint)
+- **Icons:** Custom SVG React component'leri
+- **CSS Class Merge:** clsx
 
-================================================================================
-2. ENTRY POINT PATTERN
-================================================================================
+---
 
-- Entry point bir ES class'tır (arrow function veya factory değil).
-- Constructor sadece config alır ve property'lere atar. Side-effect yapmaz.
-- Mount işlemi ayrı bir init() metodu ile tetiklenir (lazy initialization).
-- init() içinde:
-  1. document.getElementById ile hedef element bulunur.
-  2. ReactDOM.createRoot ile React ağacı bu element'e mount edilir.
-  3. Element bulunamazsa açıklayıcı bir Error fırlatılır.
-- Class default export edilir.
+## 2. Dizin Yapısı
 
-Örnek imza:
-  class WidgetName {
-    constructor(params: ParamsType)
-    init(): void
-  }
-
-ParamsType mutlaka şunları içerir:
-  - targetElemId: string (zorunlu)
-  - options?: OptionsType (opsiyonel, default değerleri olmalı)
-  - ...domain-specific data props (opsiyonel)
-
-================================================================================
-                       B) KOD KÜLTÜRÜ & STANDARTLAR
-================================================================================
-
-================================================================================
-1. TEKNOLOJİ YIĞINI
-================================================================================
-
-- Framework: React
-- Dil: TypeScript (strict mode)
-- State Management: Redux Toolkit (createSlice pattern)
-- Styling: SCSS Modules (component-scoped) + Global SCSS (variables, mixins, utility classes)
-- HTTP Client: Axios (custom interceptors ile)
-- Linting: ESLint + Prettier
-- Formatting: Prettier
-- Git Hooks: Husky (commit öncesi lint)
-- Icons: React Bootstrap Icons (SVG)
-- Notifications: react-hot-toast
-- Date: dayjs
-- CSS Class Merge: clsx
-
-================================================================================
-2. DİZİN YAPISI
-================================================================================
-
+```
 src/
+├── widget.tsx              # Widget entry point (UMD build)
+├── App.tsx                 # Root React component
+├── main.tsx                # Dev server entry point
+├── vite-env.d.ts           # Vite type declarations
+├── assets/                 # Statik dosyalar (görseller vb.)
 ├── components/             # React bileşenleri (kategori bazlı)
 │   ├── shared/             # Ortak bileşenler (Button, Input, Modal, Form)
 │   ├── cards/              # Kart bileşenleri
 │   ├── lists/              # Liste bileşenleri
 │   └── modals/             # Modal bileşenleri
-├── containers/             # Sayfa/view seviyesinde container bileşenler
-├── layouts/                # Layout wrapper bileşenleri
+├── containers/             # Sayfa seviyesinde container bileşenler
 ├── services/               # API/data fetching
 │   ├── clients/            # Axios client instance'ları
 │   ├── modules/            # Servis modülleri (endpoint grupları)
 │   └── interceptors/       # Request/response interceptor'lar
-├── store/                  # Redux Toolkit
-│   └── modules/            # Redux slice'lar (domain bazlı)
+├── store/                  # Zustand store
+│   └── index.ts            # Tek dosyada tüm store tanımı
 ├── hooks/                  # Custom React hook'lar
 ├── types/                  # TypeScript type tanımları
 ├── enums/                  # Enum tanımları
@@ -99,19 +56,50 @@ src/
 ├── config/                 # Konfigürasyon dosyaları
 ├── providers/              # React context provider'lar
 └── libs/                   # 3. parti kütüphane wrapper'ları
+```
 
-================================================================================
-3. BİLEŞEN KURALLARI
-================================================================================
+---
+
+## 3. Widget Mimarisi
+
+Proje, başka bir uygulama içerisine embed edilebilen bir widget olarak tasarlanmıştır.
+
+### Entry Point (`src/widget.tsx`)
+- Class tabanlı API: `new ConversationalSearchWidget(params).init()`
+- `init()` ile mount, `destroy()` ile unmount
+- Parametre olarak `targetElemId`, `isLoggedIn`, `onClose` alır
+
+### Build
+- `npm run dev` → Vite dev server (`index.html` + `src/main.tsx`)
+- `npm run build` → UMD bundle (`build/conversational-search.umd.js` + `build/*.css`)
+- React ve ReactDOM external olarak beklenir (host proje sağlar)
+
+### Kullanım
+```html
+<div id="chat-widget"></div>
+<script>
+  const widget = new ConversationalSearchWidget({
+    targetElemId: 'chat-widget',
+    isLoggedIn: false,
+    onClose: () => console.log('kapatıldı'),
+  });
+  widget.init();
+</script>
+```
+
+---
+
+## 4. Bileşen Kuralları
 
 ### Yapı
-- Her component kendi klasöründe index.tsx + opsiyonel index.module.scss dosyası ile bulunur.
-- Tüm component'lar functional component olarak yazılır.
-- Component'ler FC<Props> ile tiplendirilir.
-- Performance için memo() ile sarılır.
+- Her component kendi klasöründe `index.tsx` + opsiyonel `index.module.scss` dosyası ile bulunur.
+- Tüm component'lar **functional component** olarak yazılır.
+- Component'ler `FC<Props>` ile tiplendirilir.
+- Performance için `memo()` ile sarılır.
 
 ### Örnek Bileşen Yapısı
 
+```tsx
 import { FC, memo } from 'react';
 import clsx from 'clsx';
 
@@ -134,13 +122,15 @@ const MyComponent: FC<Props> = ({ title, variant = UIVariant.PRIMARY, isActive }
 };
 
 export default memo(MyComponent) as typeof MyComponent;
+```
 
 ### Props Tanımlama
-- type kullanılır (interface değil).
-- Opsiyonel prop'lar ? ile işaretlenir.
-- HTML attribute'leri extend etmek için Omit ve Partial kullanılır.
-- Ortak prop'lar CommonElementProps type'ından türetilir.
+- `type` kullanılır (`interface` değil).
+- Opsiyonel prop'lar `?` ile işaretlenir.
+- HTML attribute'leri extend etmek için `Omit` ve `Partial` kullanılır.
+- Ortak prop'lar `CommonElementProps` type'ından türetilir.
 
+```tsx
 type Props = Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'onClick'> &
   Partial<{
     variant: UIVariant;
@@ -148,38 +138,39 @@ type Props = Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'onClick'> &
     isLoading: boolean;
   }> &
   CommonElementProps;
+```
 
-================================================================================
-4. İSİMLENDİRME KURALLARI
-================================================================================
+---
+
+## 5. İsimlendirme Kuralları
 
 | Öge                  | Kural             | Örnek                           |
 |----------------------|-------------------|---------------------------------|
-| Component klasörleri | PascalCase        | GoldPriceCard/index.tsx         |
-| Utility dosyaları    | kebab-case        | date.helper.ts                  |
-| Hook dosyaları       | camelCase + use   | useAuth.ts, useSocket.ts        |
-| Servis dosyaları     | kebab-case        | gold-price.service.ts           |
-| Type dosyaları       | kebab-case        | base-option.type.ts             |
-| Enum dosyaları       | kebab-case        | ui-variant.enum.ts              |
-| Constant dosyaları   | kebab-case        | date-range.constants.ts         |
-| SCSS modülleri       | kebab-case        | index.module.scss               |
-| Global SCSS          | _ prefix          | _variables.scss, _mixins.scss   |
-| CSS class'ları       | kebab-case + BEM  | .card-wrapper, .btn--primary    |
-| Fonksiyonlar         | camelCase         | getGoldApiUrl()                 |
-| Enum değerleri       | UPPER_SNAKE_CASE  | UIVariant.PRIMARY, UISize.LARGE |
+| Component klasörleri | PascalCase        | `PropertyCard/index.tsx`        |
+| Utility dosyaları    | kebab-case        | `date.helper.ts`                |
+| Hook dosyaları       | camelCase + `use` | `useChat.ts`, `useAutoScroll.ts`|
+| Servis dosyaları     | kebab-case        | `chat.service.ts`               |
+| Type dosyaları       | kebab-case        | `chat-message.type.ts`          |
+| Enum dosyaları       | kebab-case        | `chat-status.enum.ts`           |
+| Constant dosyaları   | kebab-case        | `mock-data.constants.ts`        |
+| SCSS modülleri       | kebab-case        | `index.module.scss`             |
+| Global SCSS          | `_` prefix        | `_variables.scss`, `_mixins.scss` |
+| CSS class'ları       | kebab-case + BEM  | `.card-wrapper`, `.btn--primary` |
+| Fonksiyonlar         | camelCase         | `handleSend()`, `formatDate()`  |
+| Enum değerleri       | UPPER_SNAKE_CASE  | `ChatStatus.IDLE`, `ChatRole.AI`|
 
-================================================================================
-5. IMPORT KURALLARI
-================================================================================
+---
 
-- Tüm import'lar @/* path alias'ı ile yapılır (relative import kullanılmaz).
-- tsconfig.json içinde "@/*": ["src/*"] tanımlıdır.
+## 6. Import Kuralları
+
+- Tüm import'lar `@/*` path alias'ı ile yapılır (relative import kullanılmaz).
+- `tsconfig.json` ve `vite.config.ts` içinde `"@/*": ["src/*"]` tanımlıdır.
 
 ### Import Sıralaması
 
+```tsx
 // 1. External kütüphaneler
 import { FC, memo, useState } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
 import clsx from 'clsx';
 
 // 2. Internal - component'ler
@@ -187,75 +178,82 @@ import Button from '@/components/shared/Button';
 import Modal from '@/components/shared/Modal';
 
 // 3. Internal - hook'lar
-import useAuth from '@/hooks/useAuth';
+import useChat from '@/hooks/useChat';
 
 // 4. Internal - servisler
-import goldService from '@/services/modules/gold.service';
+import chatService from '@/services/modules/chat.service';
 
 // 5. Internal - store
-import { setGolds } from '@/store/modules/golds';
+import { useChatStore } from '@/store';
 
 // 6. Internal - type'lar ve enum'lar
-import UIVariant from '@/enums/ui-variant.enum';
-import type { BaseOption } from '@/types/base-option.type';
+import ChatStatus from '@/enums/chat-status.enum';
+import type { ChatMessage } from '@/types/chat-message.type';
 
 // 7. Internal - helper'lar ve constant'lar
 import { formatDate } from '@/helpers/date.helper';
 
 // 8. Styles (her zaman en sonda)
 import styles from './index.module.scss';
+```
 
 ### Export Kuralları
-- Component'ler: export default memo(ComponentName) as typeof ComponentName;
+- Component'ler: `export default memo(ComponentName) as typeof ComponentName;`
 - Utility fonksiyonlar: Named export
-- Redux action'lar: Named export (export const { setGolds } = goldsSlice.actions;)
+- Store: Named export (`export const useChatStore = create<ChatStore>(...)`)
 - Servisler: Default export (object olarak)
 
-================================================================================
-6. DURUM YÖNETİMİ (Redux Toolkit)
-================================================================================
+---
 
-### Slice Yapısı
-- Her domain için ayrı bir slice dosyası: /store/modules/domain.ts
-- createSlice() kullanılır.
-- State type'ları /types/ altında tanımlanır.
+## 7. Durum Yönetimi (Zustand)
 
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import type { GoldsState } from '@/types/golds-state.type';
+### Store Yapısı
+- Tek bir store dosyası: `store/index.ts`
+- `create()` ile store oluşturulur.
+- State ve action'lar aynı objede tanımlanır.
 
-const initialState: GoldsState = {
-  items: [],
+```tsx
+import { create } from 'zustand';
+
+import ChatStatus from '@/enums/chat-status.enum';
+import type { ChatMessage } from '@/types/chat-message.type';
+
+type ChatStore = {
+  messages: ChatMessage[];
+  status: ChatStatus;
+
+  addMessage: (message: ChatMessage) => void;
+  setStatus: (status: ChatStatus) => void;
+  resetChat: () => void;
 };
 
-const goldsSlice = createSlice({
-  name: 'golds',
-  initialState,
-  reducers: {
-    setGolds: (state, action: PayloadAction<Gold[]>) => {
-      state.items = action.payload;
-    },
-  },
-});
+export const useChatStore = create<ChatStore>(set => ({
+  messages: [],
+  status: ChatStatus.IDLE,
 
-export const { setGolds } = goldsSlice.actions;
-export default goldsSlice.reducer;
+  addMessage: message => set(state => ({ messages: [...state.messages, message] })),
+  setStatus: status => set({ status }),
+  resetChat: () => set({ messages: [], status: ChatStatus.IDLE }),
+}));
+```
 
-### Store Provider Deseni
-- StoreProvider component'i uygulamayı Redux Provider ile sarar.
-- Config üzerinden gelen initial data, provider aracılığıyla store'a dispatch edilir.
+### Store Kullanımı
+- Component içinde: `const { messages, addMessage } = useChatStore();`
+- React dışında (widget class): `useChatStore.getState().resetChat()`
 
-================================================================================
-7. STİL KURALLARI (SCSS Modülleri)
-================================================================================
+---
+
+## 8. Stil Kuralları (SCSS Modülleri)
 
 ### Genel Kurallar
-- Her component kendi index.module.scss dosyasına sahiptir.
-- Global değişkenler _variables.scss'de tanımlanır.
+- Her component kendi `index.module.scss` dosyasına sahiptir.
+- Global değişkenler `_variables.scss`'de tanımlanır ve `vite.config.ts` içindeki `css.preprocessorOptions.scss.additionalData` ile tüm SCSS dosyalarına otomatik import edilir.
 - BEM (Block Element Modifier) naming convention'ı kullanılır.
-- Responsive tasarım mixin'ler ile yapılır (@include for-mobile, @include for-tablet).
+- Responsive tasarım mixin'ler ile yapılır (`@include for-mobile`, `@include for-tablet`).
 
 ### SCSS Module Örneği
 
+```scss
 .wrapper {
   padding: $desktop-padding;
   border-radius: $desktop-border-radius;
@@ -280,49 +278,50 @@ export default goldsSlice.reducer;
     color: $text-primary;
   }
 }
+```
 
 ### UI Varyantları ve Boyutları
-- Enum tabanlı variant'lar: PRIMARY, DARK, LIGHT, REVERSED_PRIMARY, GREEN, vb.
-- Enum tabanlı boyutlar: SMALL, MEDIUM, LARGE
+- Enum tabanlı variant'lar: `PRIMARY`, `DARK`, `LIGHT`, vb.
+- Enum tabanlı boyutlar: `SMALL`, `MEDIUM`, `LARGE`
 - clsx ile conditional class uygulaması yapılır.
 
-================================================================================
-8. API VE VERİ ÇEKME
-================================================================================
+---
+
+## 9. API ve Veri Çekme
 
 ### Servis Yapısı
-- Her API endpoint grubu için ayrı bir servis dosyası: /services/modules/domain.service.ts
-- Axios client instance'ları: /services/clients/ (farklı base URL'ler için ayrı client)
-- Request/Response interceptor'lar: /services/interceptors/
+- Her API endpoint grubu için ayrı bir servis dosyası: `/services/modules/domain.service.ts`
+- Axios client instance'ları: `/services/clients/` (farklı base URL'ler için ayrı client)
+- Request/Response interceptor'lar: `/services/interceptors/`
 
 ### Servis Dosyası Örneği
 
-import goldApiClient from '@/services/clients/gold-api-client';
+```tsx
+import apiClient from '@/services/clients/api-client';
 
 export default {
-  getChangeRate: async (params: ChangeRateParams) =>
-    goldApiClient.get('/change-rate', { params }),
+  search: async (params: SearchParams) =>
+    apiClient.get('/search', { params }),
 
-  getHistory: async (params: HistoryParams) =>
-    goldApiClient.get('/history', { params }),
-
-  getMinAndMax: async (params: MinMaxParams) =>
-    goldApiClient.get('/min-max', { params }),
+  sendMessage: async (data: SendMessageData) =>
+    apiClient.post('/messages', data),
 };
+```
 
 ### Veri Çekme Yaklaşımları
-1. Client-side: Hook'lar + servis çağrıları ile yapılır.
-2. Real-time: WebSocket entegrasyonu (useSocket hook) ile canlı veri akışı sağlanır.
+1. **Client-side:** Hook'lar + servis çağrıları ile yapılır.
+2. **Real-time:** WebSocket entegrasyonu (`useSocket` hook) ile canlı veri akışı sağlanır.
 
 ### Ortam Yapılandırması
-- Ortam değişkenleri ile API URL'leri yönetilir.
-- Farklı ortamlar (development, production) için ayrı konfigürasyon.
+- Vite ortam değişkenleri: `import.meta.env.VITE_*`
+- `.env`, `.env.development`, `.env.production` dosyaları kullanılır.
 
-================================================================================
-9. KOD KALİTESİ VE FORMATLAMA
-================================================================================
+---
+
+## 10. Kod Kalitesi ve Formatlama
 
 ### Prettier Ayarları
+```json
 {
   "printWidth": 100,
   "semi": true,
@@ -331,38 +330,39 @@ export default {
   "tabWidth": 2,
   "arrowParens": "avoid"
 }
+```
 
 ### ESLint Kuralları
-- prettier ile entegre çalışır.
-- @typescript-eslint/no-explicit-any: warn
-- @typescript-eslint/ban-ts-comment: warn
-- import/no-anonymous-default-export: off
+- `prettier` ile entegre çalışır.
+- `@typescript-eslint/no-explicit-any`: warn
+- `@typescript-eslint/ban-ts-comment`: warn
 
 ### TypeScript Ayarları
-- strict: true (strict mode aktif)
-- target: ES2017
-- Path alias: @/* -> src/*
+- `strict: true` (strict mode aktif)
+- `target: ES2020`
+- `jsx: react-jsx`
+- Path alias: `@/*` -> `src/*`
 
-================================================================================
-10. PERFORMANCE OPTİMİZASYONLARI
-================================================================================
+---
 
-- React component'ler memo() ile sarılır.
+## 11. Performance Optimizasyonları
+
+- React component'ler `memo()` ile sarılır.
 - Pahalı hesaplamalar memoize edilir.
 - CSS Modules ile scope'lanmış stiller (gereksiz CSS yüklenmez).
-- WebSocket ile gereksiz polling yerine real-time veri akışı.
+- Vite ile hızlı HMR ve build.
 
-================================================================================
-11. GENEL KURALLAR
-================================================================================
+---
 
-1. Relative import kullanma, her zaman @/ path alias'ı kullan.
-2. Component'leri her zaman memo() ile sar.
-3. Props için type kullan, interface değil.
-4. Her component kendi klasöründe olsun: ComponentName/index.tsx + index.module.scss
-5. Servisler object olarak default export edilir, fonksiyonlar named export.
-6. SCSS değişkenleri global olarak tanımlanır.
-7. BEM naming convention kullan CSS class'larında.
-8. Enum'lar ayrı dosyalarda tanımlanır, UPPER_SNAKE_CASE değerler ile.
-9. Hook'lar use prefix'i ile adlandırılır.
-10. Test yazılmaz (ihtiyaca göre eklenebilir).
+## 12. Genel Kurallar
+
+1. **Relative import kullanma**, her zaman `@/` path alias'ı kullan.
+2. **Component'leri her zaman `memo()` ile sar.**
+3. **Props için `type` kullan**, `interface` değil.
+4. **Her component kendi klasöründe olsun**: `ComponentName/index.tsx` + `index.module.scss`
+5. **Servisler object olarak default export edilir**, fonksiyonlar named export.
+6. **SCSS değişkenleri global olarak tanımlanır**, component'lerde import gerekmez.
+7. **BEM naming convention** kullan CSS class'larında.
+8. **Enum'lar ayrı dosyalarda tanımlanır**, `UPPER_SNAKE_CASE` değerler ile.
+9. **Hook'lar `use` prefix'i ile adlandırılır.**
+10. **Tek dil (Türkçe)** - i18n kütüphanesi kullanılmaz.
