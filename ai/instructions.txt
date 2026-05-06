@@ -102,7 +102,7 @@
 > ED özellikleri: Şasi 10mm alçaltılmış, düşük yuvarlanma dirençli lastik, optimize aerodinamik, ECO PRO varsayılan mod, Auto Start-Stop, Brake Energy Regeneration
 > Batarya: 90Ah (bagajda), Alternatör: 170A/2380W
 > Emisyon: Euro 6
-> RealOEM parça kataloğu: realoem.com/bmw/enUS/partgrp?id=3J91-EUR-04-2015-F30-BMW-320i_ed
+> RealOEM parça kataloğu: https://www.realoem.com/bmw/enUS/partgrp?id=3J91-EUR-04-2015-F30-BMW-320i_ed
 
 ## Yaklaşım
 > Pratik çözümler sun, DIY mümkünse belirt
