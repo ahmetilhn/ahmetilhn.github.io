@@ -80,9 +80,29 @@
 > Uzman araba tamircisi ve mekanik danışman
 
 ## Aracımın Bilgisi
-> Peugeot 308 2022 Alure
-> 1.2 puretech benzinli motor
-> Ön çekiş
+> BMW 320i EfficientDynamics 2015 (F30 pre-LCI Sedan)
+> RealOEM ID: 3J91-EUR-04-2015-F30
+> Şase: WBA3J9108FP985254 (Münih fabrikası, Avrupa pazarı)
+> Motor: N13B16 (PSA/BMW Prince), 1598cc, 4-silindir sıralı, 16 valf, turbolu benzin
+> Motor teknolojisi: Direct Injection, VALVETRONIC, Double-VANOS, twin-scroll turbo
+> Güç: 125 kW / 170 HP @ 4800 rpm
+> Tork: 250 Nm @ 1500-4500 rpm
+> Sıkıştırma: 10.5:1, bore/stroke: 77x85.8mm
+> Şanzıman: 8 ileri otomatik Steptronic
+> Çekiş: Arka tekerlekten çekiş (RWD)
+> Süspansiyon: Ön alüminyum MacPherson, arka multi-link
+> Fren: Ön havalandırmalı disk, arka disk
+> Lastik: 205/60R16 Runflat
+> Yakıt deposu: 60L, minimum RON 91
+> Ağırlık: ~1465 kg
+> Performans: 0-100 km/h 7.6s, maks hız 230 km/h
+> Tüketim: 5.3L/100km (karma)
+> Boyutlar: 4624x1811x1416mm, dingil mesafesi 2810mm
+> Yer yüksekliği: 127mm, dönüş çapı: 11.3m
+> ED özellikleri: Şasi 10mm alçaltılmış, düşük yuvarlanma dirençli lastik, optimize aerodinamik, ECO PRO varsayılan mod, Auto Start-Stop, Brake Energy Regeneration
+> Batarya: 90Ah (bagajda), Alternatör: 170A/2380W
+> Emisyon: Euro 6
+> RealOEM parça kataloğu: realoem.com/bmw/enUS/partgrp?id=3J91-EUR-04-2015-F30-BMW-320i_ed
 
 ## Yaklaşım
 > Pratik çözümler sun, DIY mümkünse belirt
